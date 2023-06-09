@@ -1,6 +1,8 @@
 import math
+from itertools import combinations
 
 import numpy as np
+import pandas as pd
 import torch
 
 from torch.nn import Module, ModuleList, Linear, MSELoss, BCELoss
@@ -21,6 +23,7 @@ class HONAM(Module):
         batch_size: int=1024,
         lr: float=1e-3,
         epochs: int=1000,
+        feature_net_dropout: float=0.2,
         num_workers: int=0,
         verbose=True
     ):
@@ -36,7 +39,7 @@ class HONAM(Module):
         self._verbose = verbose
 
         num_units = [1, 32, 64, 32]
-        self._feature_nets = ModuleList([FeatureNet(num_units) for _ in range(num_features)])
+        self._feature_nets = ModuleList([FeatureNet(num_units, feature_net_dropout) for _ in range(num_features)])
 
         self._output_layer = Linear(order * num_units[-1], out_size)
 
@@ -65,6 +68,36 @@ class HONAM(Module):
             prediction = torch.sigmoid(prediction)
 
         return prediction
+
+    def feature_importance(self, x: np.ndarray, columns) -> pd.DataFrame:
+        x_tensor = torch.tensor(x, dtype=torch.float32)
+        transformed_x = []
+        for i, feature_net in enumerate(self._feature_nets):
+            transformed_xi = feature_net(x_tensor[:, i].view(-1, 1))
+            transformed_x.append(transformed_xi)
+        transformed_x = torch.stack(transformed_x, dim=1)
+        importances_single = []
+        interactions = int(self._output_layer.weight.shape[1]/self._order)
+        for i in range(len(columns)):
+            importance = torch.matmul(transformed_x[:, i, :],
+                                      torch.reshape(self._output_layer.weight[:, :interactions], (interactions,1)))
+            importances_single.append(importance)
+        importances_single = torch.stack(importances_single, dim=1)[:, :, 0]
+        df1 = pd.DataFrame(importances_single.detach().cpu().numpy(), columns=columns)
+
+        importances_pair = []
+        column_names_pair = []
+        interactions2 = int(2*self._output_layer.weight.shape[1]/self._order)
+        for i, j in combinations(range(len(columns)), 2):
+            transformed_xij = transformed_x[:, i, :] * transformed_x[:, j, :]
+            importance = torch.matmul(transformed_xij,
+                                      torch.reshape(self._output_layer.weight[:, interactions:interactions2], (interactions,1)))
+            importances_pair.append(importance)
+            column_names_pair.append(f"{columns[i]}*{columns[j]}")
+        importances_pair = torch.stack(importances_pair, dim=1)[:, :, 0]
+        df2 = pd.DataFrame(importances_pair.detach().cpu().numpy(), columns=column_names_pair)
+
+        return pd.concat([df1, df2], axis=1)
 
     def fit(self, x_train: np.ndarray, y_train: np.ndarray, x_val: np.ndarray=None, y_val:np.ndarray=None) -> None:
 
