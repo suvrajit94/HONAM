@@ -4,6 +4,7 @@ from torch.nn import Module, ModuleList, Linear
 from torch.nn import functional
 from typing import List
 
+
 class FeatureNet(Module):
 
     def __init__(self, num_units: List[int], dropout: float=0.):

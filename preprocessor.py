@@ -1,12 +1,13 @@
 import numpy as np
 
-from sklearn.preprocessing import OrdinalEncoder, QuantileTransformer, MinMaxScaler
+from sklearn.preprocessing import OrdinalEncoder, QuantileTransformer, StandardScaler
+from sklearn.pipeline import Pipeline
 from typing import Tuple, List
+
 
 class Preprocessor:
 
-    def __init__(self, task: str, n_quantiles: int=1000):
-
+    def __init__(self, task: str, n_quantiles: int = 1000):
         """
         :param task: regression or binary_classification
         :param n_quantiles: the number of quantiles
@@ -15,11 +16,11 @@ class Preprocessor:
         self._task = task
 
         self._ordinary_encoder = OrdinalEncoder(handle_unknown="use_encoded_value", unknown_value=-1)
-        self._quantile_transformer = QuantileTransformer(n_quantiles=n_quantiles)
-        self._minmax_scaler = MinMaxScaler(feature_range=(-1, 1))
+        self._quantile_transformer = QuantileTransformer(n_quantiles=n_quantiles, output_distribution="normal")
+        self._standard_scaler = StandardScaler()
 
         if task == "regression":
-            self._y_transformer = MinMaxScaler(feature_range=(-1, 1))
+            self._y_transformer = StandardScaler()
         elif task == "binary_classification":
             self._y_transformer = OrdinalEncoder()
 
@@ -59,25 +60,45 @@ class Preprocessor:
 
         return x, y
 
-    def _transform_xy(self, x: np.ndarray, y: np.ndarray, fit: bool=False) -> Tuple[np.ndarray, np.ndarray]:
+    def inverse_transform_x(self, x: np.ndarray) -> np.ndarray:
+        """
+        Inverse transform x
+        :param x: transformed feature
+        :return: original x
+        """
+        _x = self._standard_scaler.inverse_transform(x)
+        _x = self._quantile_transformer.inverse_transform(_x)
+        if self._cat_idx:
+            _x[:, self._cat_idx] = self._ordinary_encoder.inverse_transform(_x[:, self._cat_idx])
+        return _x
 
-        x, y = x.copy(), y.copy()
-        cat_idx = self._get_cat_idx(x)
+    def inverse_transform_y(self, y: np.ndarray) -> np.ndarray:
+        """
+        Inverse transform y.
+        :param y: transformed target
+        :return: original y
+        """
+        return self._y_transformer.inverse_transform(y)
 
+    def _transform_xy(self, x: np.ndarray, y: np.ndarray, fit: bool = False) -> Tuple[np.ndarray, np.ndarray]:
+
+        self._cat_idx = self._get_cat_idx(x)
+
+        _x, _y = x.copy(), y.copy()
         if fit:
-            if cat_idx:
-                x[:, cat_idx] = self._ordinary_encoder.fit_transform(x[:, cat_idx])
-            x = self._quantile_transformer.fit_transform(x)
-            x = self._minmax_scaler.fit_transform(x)
-            y = self._y_transformer.fit_transform(y)
+            if self._cat_idx:
+                _x[:, self._cat_idx] = self._ordinary_encoder.fit_transform(_x[:, self._cat_idx])
+            _x = self._quantile_transformer.fit_transform(_x)
+            _x = self._standard_scaler.fit_transform(_x)
+            _y = self._y_transformer.fit_transform(_y)
         else:
-            if cat_idx:
-                x[:, cat_idx] = self._ordinary_encoder.transform(x[:, cat_idx])
-            x = self._quantile_transformer.transform(x)
-            x = self._minmax_scaler.transform(x)
-            y = self._y_transformer.transform(y)
+            if self._cat_idx:
+                _x[:, self._cat_idx] = self._ordinary_encoder.transform(_x[:, self._cat_idx])
+            _x = self._quantile_transformer.transform(_x)
+            _x = self._standard_scaler.transform(_x)
+            _y = self._y_transformer.transform(_y)
 
-        return x, y
+        return _x, _y
 
     @ staticmethod
     def _get_cat_idx(x: np.ndarray) -> List[int]:

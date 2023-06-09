@@ -1,0 +1,13 @@
+{
+  "age": "age",
+  "sex": "sex",
+  "bmi": "body mass index",
+  "map": "average blood pressure",
+  "tc": "total serum cholesterol",
+  "ldl": "low-density lipoprotein",
+  "hdl": "high-density lipoprotein",
+  "tch": "total cholesterol",
+  "ltg": "lamotrigine",
+  "glu": "glucose",
+  "y": "disease progression one year after baseline"
+}

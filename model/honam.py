@@ -1,3 +1,5 @@
+import math
+
 import numpy as np
 import torch
 
@@ -6,6 +8,7 @@ from torch.utils.data import TensorDataset, DataLoader
 from torch.optim import Adam
 
 from model import FeatureNet
+
 
 class HONAM(Module):
 

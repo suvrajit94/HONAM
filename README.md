@@ -10,11 +10,11 @@ Therefore, HONAM can produce accurate and interpretable predictions.
 ## Requirements
 
 We have implemented the code in the following python environment:
-- python 3.8.12
-- pytorch 1.10.2
-- pandas 1.2.3
-- numpy 1.21.2
-- scikit-learn 1.0.2
+- python 3.8.12 (3.9.16)
+- pytorch 1.10.2 (1.11.0)
+- pandas 1.2.3 (1.2.4)
+- numpy 1.21.2 (1.24.3)
+- scikit-learn 1.0.2 (1.2.2)
 
 ## Quick Start
 
