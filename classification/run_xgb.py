@@ -19,15 +19,7 @@ def run_single():
     y_train = np.concatenate((y_train, y_val)).ravel()
 
     # train
-    model = MLPClassifier(
-        hidden_layer_sizes=(32,64,32),
-        learning_rate='adaptive',
-        learning_rate_init=0.001,
-        max_iter=1000,
-        early_stopping=True,
-        validation_fraction=0.2,
-        tol=0.001,
-        alpha=0.0001)
+    model = XGBClassifier(n_estimators=1500, learning_rate=0.2, gamma=7, max_depth=5, objective='binary:logistic', eval_metric='auc')
     model.fit(x_train, y_train)
 
     # test
@@ -43,6 +35,7 @@ def run_multiple(n=5):
     auprcs = []
     for i in range(n):
         auroc, auprc = run_single()
+        print("run completed...")
         aurocs.append(auroc)
         auprcs.append(auprc)
 

@@ -19,13 +19,15 @@ def run_single():
     y_train = np.concatenate((y_train, y_val))
 
     # train
-    model = ExplainableBoostingClassifier(
-        feature_names=columns,
-        outer_bags=8,
-        inner_bags=8,
-        learning_rate=0.01,
-        max_rounds=20_000,
-        validation_size=0.2)
+    # model = ExplainableBoostingClassifier(
+    #     feature_names=columns,
+    #     outer_bags=8,
+    #     inner_bags=8,
+    #     learning_rate=0.01,
+    #     max_rounds=20_000,
+    #     validation_size=0.2)
+
+    model = ExplainableBoostingClassifier(feature_names=columns, outer_bags=10, inner_bags=10, learning_rate=0.01, max_rounds=30_000, validation_size=0.2)
     model.fit(x_train, y_train)
 
     # test
